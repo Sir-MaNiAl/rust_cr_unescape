@@ -1,4 +1,5 @@
-mod entities;
+mod characters;
+// mod entities;
 
 use core::convert::TryFrom;
 use std::collections::BTreeMap;
@@ -36,7 +37,10 @@ enum Parse {
 /// assert_eq!(cr_unescape::unescape(&input), result);
 /// ```
 pub fn unescape(text: &String) -> String {
-    let characters: BTreeMap<String, String> = entities::load().unwrap();
+    let mut characters = BTreeMap::<&str, &str>::new();
+    for (key, value) in characters::CHARACTERS.iter() {
+        characters.insert(&key, &value);
+    }
     let mut result_buffer = String::with_capacity(text.len());
 
     let mut step = Parse::NonEscaped;
@@ -163,5 +167,6 @@ pub fn unescape(text: &String) -> String {
         Parse::Hex(escape_pos) => result_buffer.push_str(&text[escape_pos..]),
         Parse::NonEscaped => (),
     };
+    result_buffer.shrink_to_fit();
     result_buffer
 }
