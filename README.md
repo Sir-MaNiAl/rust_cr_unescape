@@ -6,8 +6,8 @@ This library is for unescaping character references in HTML and XML. Works on bo
 use cr_unescape::unescape;
 
 fn main() {
-    let input = String::from(
-        "In SGML, HTML and XML documents, the logical constructs known as \
+    let input = "\
+        In SGML, HTML and XML documents, the logical constructs known as \
         character data and attribute values consist of sequences of \
         characters, in which each character can manifest directly \
         (representing itself), or can be represented by a series of \
@@ -20,9 +20,9 @@ fn main() {
         &#177; &#x192;
         Character entity reference:
         &name;
-        &reg;");
-    let result = String::from(
-        "In SGML, HTML and XML documents, the logical constructs known as \
+        &reg;";
+    let result = "\
+        In SGML, HTML and XML documents, the logical constructs known as \
         character data and attribute values consist of sequences of \
         characters, in which each character can manifest directly \
         (representing itself), or can be represented by a series of \
@@ -35,7 +35,7 @@ fn main() {
         ± ƒ
         Character entity reference:
         &name;
-        ®");
-    assert_eq!(unescape(&input), result);
+        ®";
+    assert_eq!(unescape(&input).unwrap(), result);
 }
 ```
