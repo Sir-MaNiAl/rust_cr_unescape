@@ -18,25 +18,25 @@ enum Parse {
 
 /// Leaves text as is:
 /// ```
-/// let input = String::from("A character entity reference refers to the content of a named entity.");
-/// let result = String::from("A character entity reference refers to the content of a named entity.");
-/// assert_eq!(cr_unescape::unescape(&input), result);
+/// let input = "A character entity reference refers to the content of a named entity.";
+/// let result = "A character entity reference refers to the content of a named entity.";
+/// assert_eq!(cr_unescape::unescape(&input).unwrap(), result);
 /// ```
 ///
 /// Converts named, decimal and hex escaped characters:
 /// ```
-/// let input = String::from("&reg; &#177; &#x192;");
-/// let result = String::from("® ± ƒ");
-/// assert_eq!(cr_unescape::unescape(&input), result);
+/// let input = "&reg; &#177; &#x192;";
+/// let result = "® ± ƒ";
+/// assert_eq!(cr_unescape::unescape(&input).unwrap(), result);
 /// ```
 ///
 /// Leaves broken/invalid escaped characters as is:
 /// ```
-/// let input = String::from("&r; &#; &#x19");
-/// let result = String::from("&r; &#; &#x19");
-/// assert_eq!(cr_unescape::unescape(&input), result);
+/// let input = "&r; &#; &#x19";
+/// let result = "&r; &#; &#x19";
+/// assert_eq!(cr_unescape::unescape(&input).unwrap(), result);
 /// ```
-pub fn unescape(text: &String) -> String {
+pub fn unescape<'a>(text: &str) -> Option<String> {
     let mut characters = BTreeMap::<&str, &str>::new();
     for (key, value) in characters::CHARACTERS.iter() {
         characters.insert(&key, &value);
@@ -47,13 +47,9 @@ pub fn unescape(text: &String) -> String {
 
     for (i, symbol) in text.char_indices() {
         match step {
-            Parse::NonEscaped => {
-                if symbol == '&' {
-                    step = Parse::Escaped(i)
-                } else {
-                    result_buffer.push(symbol)
-                }
-            }
+            Parse::NonEscaped if symbol == '&' => step = Parse::Escaped(i),
+            Parse::NonEscaped => result_buffer.push(symbol),
+
             Parse::Escaped(escape_pos) => match symbol {
                 'a'..='z' | 'A'..='Z' => {
                     step = Parse::Named(escape_pos);
@@ -111,18 +107,18 @@ pub fn unescape(text: &String) -> String {
                     step = Parse::Escaped(i);
                 }
                 '0'..='9' => (),
-                ';' => {
-                    if i >= escape_pos + 3 {
-                        let char_reference = &text[(escape_pos + 2)..i];
-                        match u32::from_str_radix(char_reference, 10) {
-                            Ok(code) => match char::try_from(code) {
-                                Ok(character) => result_buffer.push_str(&character.to_string()),
-                                _error => result_buffer.push_str(&text[escape_pos..=i]),
-                            },
+                ';' if i >= escape_pos + 3 => {
+                    let char_reference = &text[(escape_pos + 2)..i];
+                    println!("{}", u32::from_str_radix(char_reference, 10).unwrap());
+                    match u32::from_str_radix(char_reference, 10) {
+                        Ok(code) => match char::try_from(code) {
+                            Ok(character) => {
+                                result_buffer.push_str(&character.to_string());
+                                println!("{}", &character.to_string());
+                            }
                             _error => result_buffer.push_str(&text[escape_pos..=i]),
-                        }
-                    } else {
-                        result_buffer.push_str(&text[escape_pos..=i]);
+                        },
+                        _error => result_buffer.push_str(&text[escape_pos..=i]),
                     }
                     step = Parse::NonEscaped;
                 }
@@ -137,18 +133,14 @@ pub fn unescape(text: &String) -> String {
                     step = Parse::Escaped(i);
                 }
                 '0'..='9' | 'a'..='f' | 'A'..='F' => (),
-                ';' => {
-                    if i >= escape_pos + 3 {
-                        let char_reference = &text[(escape_pos + 3)..i];
-                        match u32::from_str_radix(char_reference, 16) {
-                            Ok(code) => match char::try_from(code) {
-                                Ok(character) => result_buffer.push_str(&character.to_string()),
-                                _error => result_buffer.push_str(&text[escape_pos..=i]),
-                            },
+                ';' if i >= escape_pos + 3 => {
+                    let char_reference = &text[(escape_pos + 3)..i];
+                    match u32::from_str_radix(char_reference, 16) {
+                        Ok(code) => match char::try_from(code) {
+                            Ok(character) => result_buffer.push_str(&character.to_string()),
                             _error => result_buffer.push_str(&text[escape_pos..=i]),
-                        }
-                    } else {
-                        result_buffer.push_str(&text[escape_pos..=i]);
+                        },
+                        _error => result_buffer.push_str(&text[escape_pos..=i]),
                     }
                     step = Parse::NonEscaped;
                 }
@@ -168,5 +160,5 @@ pub fn unescape(text: &String) -> String {
         Parse::NonEscaped => (),
     };
     result_buffer.shrink_to_fit();
-    result_buffer
+    Some(result_buffer)
 }
