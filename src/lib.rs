@@ -109,12 +109,10 @@ pub fn unescape<'a>(text: &str) -> Option<String> {
                 '0'..='9' => (),
                 ';' if i >= escape_pos + 3 => {
                     let char_reference = &text[(escape_pos + 2)..i];
-                    println!("{}", u32::from_str_radix(char_reference, 10).unwrap());
                     match u32::from_str_radix(char_reference, 10) {
                         Ok(code) => match char::try_from(code) {
                             Ok(character) => {
                                 result_buffer.push_str(&character.to_string());
-                                println!("{}", &character.to_string());
                             }
                             _error => result_buffer.push_str(&text[escape_pos..=i]),
                         },
