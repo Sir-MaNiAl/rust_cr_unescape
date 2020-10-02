@@ -3,7 +3,7 @@ Character Reference Unescape
 This library is for unescaping character references in HTML and XML. Works on both numeric character references and character entity references.  
 ## Usage:
 ```rust
-use cr_unescape::unescape;
+use cr_unescape::EscapeCharacters;
 
 fn main() {
     let input = "\
@@ -36,6 +36,6 @@ fn main() {
         Character entity reference:
         &name;
         ®";
-    assert_eq!(unescape(&input).unwrap(), result);
+    assert_eq!(input.unescape().unwrap(), result);
 }
 ```
