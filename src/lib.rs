@@ -71,19 +71,15 @@ pub fn unescape<'a>(text: &str) -> Option<String> {
                     result_buffer.push_str(&text[escape_pos..i]);
                     step = Parse::Escaped(i);
                 }
-                ';' => {
-                    if i > escape_pos + 2 {
-                        let char_reference = &text[(escape_pos + 1)..i];
-                        match characters.get(char_reference) {
-                            Some(character) => result_buffer.push_str(character),
-                            None => result_buffer.push_str(&text[escape_pos..=i]),
-                        }
-                    } else {
-                        result_buffer.push_str(&text[escape_pos..=i]);
+                'a'..='z' | 'A'..='Z' | '0'..='9' => (),
+                ';' if i > escape_pos + 2 => {
+                    let char_reference = &text[(escape_pos + 1)..i];
+                    match characters.get(char_reference) {
+                        Some(character) => result_buffer.push_str(character),
+                        None => result_buffer.push_str(&text[escape_pos..=i]),
                     }
                     step = Parse::NonEscaped;
                 }
-                'a'..='z' | 'A'..='Z' | '0'..='9' => (),
                 _ => {
                     result_buffer.push_str(&text[escape_pos..=i]);
                     step = Parse::NonEscaped;
@@ -109,14 +105,12 @@ pub fn unescape<'a>(text: &str) -> Option<String> {
                 '0'..='9' => (),
                 ';' if i >= escape_pos + 3 => {
                     let char_reference = &text[(escape_pos + 2)..i];
-                    match u32::from_str_radix(char_reference, 10) {
+                    match char_reference.parse::<u32>() {
                         Ok(code) => match char::try_from(code) {
-                            Ok(character) => {
-                                result_buffer.push_str(&character.to_string());
-                            }
-                            _error => result_buffer.push_str(&text[escape_pos..=i]),
+                            Ok(character) => result_buffer.push_str(&character.to_string()),
+                            _ => result_buffer.push_str(&text[escape_pos..=i]),
                         },
-                        _error => result_buffer.push_str(&text[escape_pos..=i]),
+                        _ => result_buffer.push_str(&text[escape_pos..=i]),
                     }
                     step = Parse::NonEscaped;
                 }
@@ -131,7 +125,7 @@ pub fn unescape<'a>(text: &str) -> Option<String> {
                     step = Parse::Escaped(i);
                 }
                 '0'..='9' | 'a'..='f' | 'A'..='F' => (),
-                ';' if i >= escape_pos + 3 => {
+                ';' if i >= escape_pos + 4 => {
                     let char_reference = &text[(escape_pos + 3)..i];
                     match u32::from_str_radix(char_reference, 16) {
                         Ok(code) => match char::try_from(code) {
@@ -159,4 +153,14 @@ pub fn unescape<'a>(text: &str) -> Option<String> {
     };
     result_buffer.shrink_to_fit();
     Some(result_buffer)
+}
+
+pub trait EscapeCharacters {
+    fn unescape(&self) -> Option<String>;
+}
+
+impl EscapeCharacters for &str {
+    fn unescape(&self) -> Option<String> {
+        unescape(&self)
+    }
 }
