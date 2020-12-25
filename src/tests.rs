@@ -1,4 +1,14 @@
-use crate::{unescape, EscapeCharacters};
+use crate::{characters::CHARACTERS, unescape, EscapeCharacters};
+
+#[test]
+fn test_sorted_characters() {
+    let mut sorted_chatacters = CHARACTERS.clone();
+    sorted_chatacters.sort_by_key(|k| k.0);
+    assert!(CHARACTERS
+        .iter()
+        .zip(sorted_chatacters.iter())
+        .all(|(x, y)| x == y));
+}
 
 #[test]
 fn test_unescaped() {

@@ -1,8 +1,7 @@
 mod characters;
-// mod entities;
 
+use characters::CHARACTERS;
 use core::convert::TryFrom;
-use std::collections::BTreeMap;
 
 #[cfg(test)]
 mod tests;
@@ -37,10 +36,6 @@ enum Parse {
 /// assert_eq!(cr_unescape::unescape(&input).unwrap(), result);
 /// ```
 pub fn unescape<'a>(text: &str) -> Option<String> {
-    let mut characters = BTreeMap::<&str, &str>::new();
-    for (key, value) in characters::CHARACTERS.iter() {
-        characters.insert(&key, &value);
-    }
     let mut result_buffer = String::with_capacity(text.len());
 
     let mut step = Parse::NonEscaped;
@@ -74,9 +69,9 @@ pub fn unescape<'a>(text: &str) -> Option<String> {
                 'a'..='z' | 'A'..='Z' | '0'..='9' => (),
                 ';' if i > escape_pos + 2 => {
                     let char_reference = &text[(escape_pos + 1)..i];
-                    match characters.get(char_reference) {
-                        Some(character) => result_buffer.push_str(character),
-                        None => result_buffer.push_str(&text[escape_pos..=i]),
+                    match CHARACTERS.binary_search_by_key(&char_reference, |&(x, _y)| x) {
+                        Ok(index) => result_buffer.push_str(CHARACTERS.get(index).unwrap().1),
+                        Err(_) => result_buffer.push_str(&text[escape_pos..=i]),
                     }
                     step = Parse::NonEscaped;
                 }
